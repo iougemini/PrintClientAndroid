@@ -12,8 +12,6 @@ import android.os.Bundle
 import android.os.Environment
 import android.print.PrintAttributes
 import android.print.PrintJob
-import android.print.PrintJobId
-import android.print.PrintJobInfo
 import android.print.PrintManager
 import android.provider.MediaStore
 import android.util.Base64
@@ -58,7 +56,7 @@ class MainActivity : AppCompatActivity() {
 
     private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
     private var lastBackAt = 0L
-    private var printJob: PrintJob? = null
+    private var printing = false
 
     /** 网页里 <input type="file"> 的选文件回调 */
     private val filePicker = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -235,10 +233,11 @@ class MainActivity : AppCompatActivity() {
     /* ------------------------------------------------------------------ 打印 */
 
     private fun startPrint() {
-        if (printJob?.isCompleted == false) {
+        if (printing) {
             toast("打印任务正在进行")
             return
         }
+        printing = true
         // 网页的 @media print 规则在 WebView 里不一定生效，
         // 先用 .printing 类把页面切成「只显示单据」的白底版式，再交给系统打印。
         webView.evaluateJavascript("document.documentElement.classList.add('printing')", null)
@@ -252,8 +251,7 @@ class MainActivity : AppCompatActivity() {
                     .setColorMode(PrintAttributes.COLOR_MODE_COLOR)
                     .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
                     .build()
-                printJob = pm.print("印刷管理系统-单据", adapter, attrs)
-                watchPrintJob(printJob)
+                watchPrintJob(pm.print("印刷管理系统-单据", adapter, attrs))
             } catch (e: Throwable) {
                 endPrinting()
                 toast("无法调起打印：${e.message}")
@@ -261,35 +259,45 @@ class MainActivity : AppCompatActivity() {
         }, 400)
     }
 
+    /**
+     * 盯着打印任务，结束后把页面从白底单据版式恢复回来。
+     *
+     * 注意：PrintManager 的 PrintJobStateChangeListener / addPrintJobStateChangeListener
+     * 都是 system API（@SystemApi），普通应用编译时根本看不到这些符号，所以这里改用
+     * 公开 API PrintManager.getPrintJobs() 每秒轮询一次任务状态。
+     */
     private fun watchPrintJob(job: PrintJob?) {
-        val pJob = job ?: run { endPrinting(); return }
+        val target = job ?: run { endPrinting(); return }
         val pm = getSystemService(Context.PRINT_SERVICE) as PrintManager
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-            webView.postDelayed({ endPrinting() }, 120_000)
-            return
-        }
-        val listener = object : PrintManager.PrintJobStateChangeListener {
-            override fun onPrintJobStateChanged(id: PrintJobId?) {
-                if (id == null || id != pJob.id) return
-                val state = pm.getPrintJobInfo(id)?.state ?: return
-                if (state == PrintJobInfo.STATE_COMPLETED ||
-                    state == PrintJobInfo.STATE_CANCELED ||
-                    state == PrintJobInfo.STATE_FAILED
-                ) {
-                    try { pm.removePrintJobStateChangeListener(this) } catch (e: Exception) { /* 忽略 */ }
+        var waited = 0L
+        var seen = false
+        val tick = object : Runnable {
+            override fun run() {
+                waited += POLL_MS
+                val current = try {
+                    pm.printJobs.firstOrNull { it.id == target.id }
+                } catch (e: Exception) {
+                    null
+                }
+                if (current != null) seen = true
+                val finished = (current == null && seen) ||
+                    current?.isCompleted == true ||
+                    current?.isCancelled == true ||
+                    current?.isFailed == true
+                // 任务一直没出现在列表里（用户直接关掉了打印面板）也别死等
+                val giveUp = if (seen) waited >= PRINT_TIMEOUT_MS else waited >= NO_JOB_MS
+                if (finished || giveUp) {
                     endPrinting()
+                } else {
+                    webView.postDelayed(this, POLL_MS)
                 }
             }
         }
-        pm.addPrintJobStateChangeListener(listener)
-        // 兜底：两分钟后无论什么状态都恢复页面
-        webView.postDelayed({
-            try { pm.removePrintJobStateChangeListener(listener) } catch (e: Exception) { /* 忽略 */ }
-            endPrinting()
-        }, 120_000)
+        webView.postDelayed(tick, POLL_MS)
     }
 
     private fun endPrinting() {
+        printing = false
         webView.post {
             webView.evaluateJavascript("document.documentElement.classList.remove('printing')", null)
         }
@@ -429,5 +437,14 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "PrintClient"
         const val ACTION_SETTINGS = "com.yuhua.printclient.action.SETTINGS"
+
+        /** 打印任务状态轮询间隔 */
+        private const val POLL_MS = 1000L
+
+        /** 打印任务最长观察时间，超时无条件恢复页面 */
+        private const val PRINT_TIMEOUT_MS = 120_000L
+
+        /** 打印任务始终没出现在系统列表里（用户关掉了面板）时的等待上限 */
+        private const val NO_JOB_MS = 20_000L
     }
 }
