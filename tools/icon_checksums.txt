@@ -1,0 +1,16 @@
+4085daf91ccec7cb763e4d60c81cff7f  app/src/main/res/drawable-nodpi/app_logo.png
+ef6aae4d8938aa4b4b92962eef0ed30a  app/src/main/res/mipmap-hdpi/ic_launcher.png
+15d855ab796d03de285d6773b1a3918e  app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png
+97d4ddc903cba0a7500b5fda14832f3f  app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+4b70d375b3a67f766e55ef26649aca32  app/src/main/res/mipmap-mdpi/ic_launcher.png
+0b5b8a72435aebbfaaab2641c82db265  app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png
+b7c7bafffb0bb7086fc971bd019ad3e2  app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+576adc1cf2d5f8d222c160c44a0195b9  app/src/main/res/mipmap-xhdpi/ic_launcher.png
+9a9231a9190136818a13efa2eade3fd2  app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png
+6ff441180d88c72c68ed07472ef4f27f  app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+83ee0b56e32134658ab49909c9f65c02  app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+82a74b134b2c08a29a5a05c64ae7b452  app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png
+282cd3d7b43d4a3a86f72d176bcf0bfa  app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+543375f22e486c8c87d28e2cd2df88bf  app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+b77f005a7f5262fb874d954bec215ffa  app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png
+1cb09234e23db9445f20ce53761c233b  app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png

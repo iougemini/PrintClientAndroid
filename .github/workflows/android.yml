@@ -12,6 +12,45 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 图标自检：确认仓库里的图标确实是 logo.png 生成的那一套。
+      # 若 res/mipmap-* 被 Android Studio 的默认图标（绿底网格+白色机器人）覆盖，
+      # 这一步会直接红掉，而不是悄悄打出一个图标错误的包。
+      - name: 校验图标资源
+        run: |
+          set -eo pipefail
+          RES=app/src/main/res
+          XML="$RES/mipmap-anydpi-v26/ic_launcher.xml"
+
+          echo "--- 模板残留检查 ---"
+          stray=$(find "$RES" -name '*.webp' -o -name 'ic_launcher_background.xml' | sort || true)
+          if [ -n "$stray" ]; then
+            echo "::warning::发现 Android Studio 模板文件，可能覆盖我们的图标："
+            echo "$stray"
+          fi
+
+          echo "--- 自适应图标 XML 内容检查 ---"
+          if [ ! -f "$XML" ]; then
+            echo "::error::缺少 $XML（自适应图标被删了）"; exit 1
+          fi
+          # 注意：我们自己也有 @color/ic_launcher_background（纯白底），
+          # 所以只把「@drawable/ic_launcher_background」当成模板特征。
+          if grep -q '@drawable/ic_launcher_background' "$XML" || ! grep -q '@mipmap/ic_launcher_foreground' "$XML"; then
+            echo "::error::$XML 指向的是安卓默认模板（@drawable/ic_launcher_background + 矢量机器人），不是我们的 logo。"
+            echo "处理：把本地 PrintClientAndroid/app/src/main/res 整个目录重新上传覆盖后重跑。"
+            exit 1
+          fi
+          echo "✅ 自适应图标指向 @mipmap/ic_launcher_foreground"
+
+          echo "--- PNG 指纹比对 ---"
+          if ! md5sum -c --quiet tools/icon_checksums.txt; then
+            echo ""
+            echo "::error::上面这些 PNG 与工程里由 public/logo.png 生成的那一套不一致（缺失或被替换）。"
+            echo "常见原因：仓库里的 res/mipmap-* 被 Android Studio 新建工程时生成的默认图标覆盖了。"
+            echo "处理：把本地 PrintClientAndroid/app/src/main/res 整个目录重新上传覆盖，然后重跑本工作流。"
+            exit 1
+          fi
+          echo "✅ 16 个图标 PNG 全部匹配"
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
