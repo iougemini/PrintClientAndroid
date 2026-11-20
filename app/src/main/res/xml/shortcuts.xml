@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutId="server_settings"
+        android:shortcutLongLabel="@string/shortcut_settings_long"
+        android:shortcutShortLabel="@string/shortcut_settings_short">
+        <intent
+            android:action="com.yuhua.printclient.action.SETTINGS"
+            android:targetClass="com.yuhua.printclient.MainActivity"
+            android:targetPackage="com.yuhua.printclient" />
+    </shortcut>
+</shortcuts>

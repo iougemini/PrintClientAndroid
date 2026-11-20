@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  内网服务端走的是明文 http，Android 9+ 默认禁止。
+  这里整体放行明文流量（内网 IP 无法用域名白名单限制，IP 段不被支持）。
+  风险可控：App 只加载用户配置的局域网地址，不做公网访问。
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

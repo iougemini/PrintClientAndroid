@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 与网页端同一套色：印泥朱红 #c33d22，纸色 #f5f4f0，墨黑 #1a1d22 -->
+    <color name="brand">#C33D22</color>
+    <color name="brand_dark">#A02F18</color>
+    <color name="brand_light">#FBECE8</color>
+    <color name="ink">#1A1D22</color>
+    <color name="text_2">#5A6270</color>
+    <color name="paper">#F5F4F0</color>
+    <color name="line">#E2E1DB</color>
+    <!-- 自适应图标底层：与 logo 底色一致的纯白 -->
+    <color name="ic_launcher_background">#FFFFFF</color>
+</resources>
