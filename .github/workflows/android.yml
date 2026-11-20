@@ -26,8 +26,20 @@ jobs:
           SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
           SDKM="$SDK/cmdline-tools/latest/bin/sdkmanager"
           echo "SDK root: $SDK"
-          yes | "$SDKM" --licenses > /dev/null || true
-          yes | "$SDKM" --install "platforms;android-35" "build-tools;35.0.0" | tail -5
+
+          # 接受许可证。sdkmanager 读完输入就退出，yes 会因 SIGPIPE 返回 141，
+          # 配合 pipefail 会把整步判失败，所以这一段临时关掉 pipefail。
+          set +o pipefail
+          yes | "$SDKM" --licenses > /dev/null 2>&1 || true
+          set -o pipefail
+
+          # 安装平台：成功只回显末几行，失败打印日志尾部便于排查
+          if ! "$SDKM" --install "platforms;android-35" "build-tools;35.0.0" > /tmp/sdk-install.log 2>&1; then
+            echo "sdkmanager 安装失败："
+            tail -40 /tmp/sdk-install.log
+            exit 1
+          fi
+          tail -3 /tmp/sdk-install.log
 
       # 显式指定 SDK 路径，省得 AGP 在云主机上找不到
       - name: 写入 local.properties
