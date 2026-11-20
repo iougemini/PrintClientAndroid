@@ -26,30 +26,28 @@ function Put-Be32 {
     $b[$o + 3] = [byte]($v -band 0xFF)
 }
 
-# NOTE: keep every CRC value as Int64 (0..0xFFFFFFFF). PowerShell promotes
-# UInt32 to Int32 inside -bxor, which then overflows on cast back.
-$script:CrcTable = New-Object 'int64[]' 256
-for ($i = 0; $i -lt 256; $i++) {
-    [int64]$c = [int64]$i
-    for ($k = 0; $k -lt 8; $k++) {
-        if (($c -band 1) -ne 0) {
-            $c = (0xEDB88320 -bxor ($c -shr 1)) -band 0xFFFFFFFF
-        } else {
-            $c = $c -shr 1
-        }
-    }
-    $script:CrcTable[$i] = $c
-}
-
+# CRC32：直接用逐位算法（反射，多项式 0xEDB88320）。
+# 之前用查找表的写法在 PowerShell 5.1 下是错的：
+#   1) 0xEDB88320 / 0xFFFFFFFF 这类 >Int32 的十六进制字面量会被解析成【负的 Int32】；
+#   2) [long] 的 -shr 是算术右移，不截断会带出符号位。
+# 结果就是每个 chunk 的 CRC 都写错 → Android 的 libpng 解码失败 →
+# 桌面启动器退回系统默认图标（绿底机器人）。别再用表，就用逐位，慢一点但不会错。
+# 多项式与初值都用十进制字面量，避免字面量类型坑。
 function Get-Crc32 {
     param([byte[]]$data, [int]$off, [int]$len)
-    [int64]$crc = 0xFFFFFFFF
-    $t = $script:CrcTable
+    [int64]$crc = 4294967295          # 0xFFFFFFFF
     $end = $off + $len
     for ($i = $off; $i -lt $end; $i++) {
-        $crc = $t[(($crc -bxor $data[$i]) -band 0xFF)] -bxor ($crc -shr 8)
+        $crc = $crc -bxor [int64]$data[$i]
+        for ($k = 0; $k -lt 8; $k++) {
+            if (($crc -band 1) -ne 0) {
+                $crc = (($crc -shr 1) -bxor 3988292384) -band 4294967295   # 0xEDB88320
+            } else {
+                $crc = ($crc -shr 1) -band 4294967295
+            }
+        }
     }
-    return ($crc -bxor 0xFFFFFFFF)
+    return [int64](($crc -bxor 4294967295) -band 4294967295)
 }
 
 function Get-Adler32 {
