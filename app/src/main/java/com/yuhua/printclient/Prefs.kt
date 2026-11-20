@@ -12,7 +12,7 @@ object Prefs {
     private const val SP_NAME = "settings"
     private const val KEY_SERVER = "server_url"
 
-    /** 印刷管理系统固定端口 */
+    /** 瑜华印务管理系统固定端口 */
     const val DEFAULT_PORT = 8090
 
     fun server(ctx: Context): String? {

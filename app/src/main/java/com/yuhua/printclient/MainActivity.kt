@@ -245,13 +245,13 @@ class MainActivity : AppCompatActivity() {
             try {
                 val pm = getSystemService(Context.PRINT_SERVICE) as PrintManager
                 @Suppress("DEPRECATION")
-                val adapter = webView.createPrintDocumentAdapter("印刷管理系统")
+                val adapter = webView.createPrintDocumentAdapter("瑜华印务管理系统")
                 val attrs = PrintAttributes.Builder()
                     .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
                     .setColorMode(PrintAttributes.COLOR_MODE_COLOR)
                     .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
                     .build()
-                watchPrintJob(pm.print("印刷管理系统-单据", adapter, attrs))
+                watchPrintJob(pm.print("瑜华印务管理系统-单据", adapter, attrs))
             } catch (e: Throwable) {
                 endPrinting()
                 toast("无法调起打印：${e.message}")
