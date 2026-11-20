@@ -17,11 +17,21 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # 云主机自带 Android SDK，但平台版本不一定齐，显式补齐 compileSdk 需要的组件
-      - uses: android-actions/setup-android@v3
-
+      # 云主机自带 Android SDK，直接用它的 sdkmanager 补齐 compileSdk 需要的组件。
+      # 注意：不要再套 android-actions/setup-android@v3 —— 它默认安装的 "tools" 包
+      # 已从 SDK 仓库移除，会以 "Failed to find package 'tools'" 直接失败。
       - name: 安装 Android SDK 组件
-        run: yes | sdkmanager --install "platforms;android-35" "build-tools;35.0.0" > /dev/null
+        run: |
+          set -eo pipefail
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          SDKM="$SDK/cmdline-tools/latest/bin/sdkmanager"
+          echo "SDK root: $SDK"
+          yes | "$SDKM" --licenses > /dev/null || true
+          yes | "$SDKM" --install "platforms;android-35" "build-tools;35.0.0" | tail -5
+
+      # 显式指定 SDK 路径，省得 AGP 在云主机上找不到
+      - name: 写入 local.properties
+        run: echo "sdk.dir=${ANDROID_HOME:-/usr/local/lib/android/sdk}" > local.properties
 
       # 工程里只有 gradle-wrapper.properties、没有 wrapper jar，所以用 setup-gradle 装指定版本
       - uses: gradle/actions/setup-gradle@v4
